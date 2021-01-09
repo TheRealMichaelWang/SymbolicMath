@@ -1,0 +1,7 @@
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\bin\Debug\SymbolicMath.exe.config
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\bin\Debug\SymbolicMath.exe
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\bin\Debug\SymbolicMath.pdb
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\obj\Debug\SymbolicMath.csprojAssemblyReference.cache
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\obj\Debug\SymbolicMath.csproj.CoreCompileInputs.cache
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\obj\Debug\SymbolicMath.exe
+C:\Users\Micha\source\repos\SymbolicMath\SymbolicMath\obj\Debug\SymbolicMath.pdb
