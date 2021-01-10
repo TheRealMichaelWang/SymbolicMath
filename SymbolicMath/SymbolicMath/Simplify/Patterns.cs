@@ -44,6 +44,11 @@ namespace SymbolicMath
                         return matchings[patternNode.Key].Equals(this);
                     }
                 }
+                else if (patternNode.Type == PatternType.Position)
+                {
+                    matchings[patternNode.Key] = this;
+                    return true;
+                }
             }
             return false;
         }
@@ -81,6 +86,15 @@ namespace SymbolicMath
                         return matchings[patternNode.Key].Equals(this);
                     }
                 }
+                else if (patternNode.Type == PatternType.Position)
+                {
+                    matchings[patternNode.Key] = this;
+                    return true;
+                }
+            }
+            else if(pattern is NumberNode)
+            {
+                return MatchPattern(new UniaryOperatorNode(UniaryOperator.Negate, -(pattern as NumberNode).Value), matchings);
             }
             return false;
         }
@@ -104,6 +118,11 @@ namespace SymbolicMath
                     {
                         return matchings[patternNode.Key].Equals(this);
                     }
+                }
+                else if(patternNode.Type == PatternType.Position)
+                {
+                    matchings[patternNode.Key] = this;
+                    return true;
                 }
                 return false;
             }
@@ -134,11 +153,21 @@ namespace SymbolicMath
                         return matchings[patternNode.Key].Equals(this);
                     }
                 }
+                else if (patternNode.Type == PatternType.Position)
+                {
+                    matchings[patternNode.Key] = this;
+                    return true;
+                }
                 return false;
             }
             else if(pattern is NumberNode)
             {
                 return pattern.Equals(this);
+            }
+            else if(pattern is UniaryOperatorNode)
+            {
+                UniaryOperatorNode uniOp = pattern as UniaryOperatorNode;
+                return new UniaryOperatorNode(UniaryOperator.Negate, -Value).MatchPattern(pattern, matchings);
             }
             return false;
         }
@@ -151,26 +180,28 @@ namespace SymbolicMath.Simplify
     { 
         Constant,
         Variable,
-        Any
+        Any,
+        Position
     }
 
     class Pattern
     {
-        public static Pattern operator +(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Add, a.Head, b.Head).Simplify(7));
-        public static Pattern operator +(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Add, a.Head, b).Simplify(7));
-        public static Pattern operator +(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Add, a, b.Head).Simplify(7));
-        public static Pattern operator -(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Subtract, a.Head, b.Head).Simplify(7));
-        public static Pattern operator -(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Subtract, a.Head, b).Simplify(7));
-        public static Pattern operator -(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Subtract, a, b.Head).Simplify(7));
-        public static Pattern operator *(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Multiply, a.Head, b.Head).Simplify(7));
-        public static Pattern operator *(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Multiply, a.Head, b).Simplify(7));
-        public static Pattern operator *(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Multiply, a, b.Head).Simplify(7));
-        public static Pattern operator /(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Divide, a.Head, b.Head).Simplify(7));
-        public static Pattern operator /(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Divide, a.Head, b).Simplify(7));
-        public static Pattern operator /(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Divide, a, b.Head).Simplify(7));
-        public static Pattern operator ^(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Power, a.Head, b.Head).Simplify(7));
-        public static Pattern operator ^(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Power, a.Head, b).Simplify(7));
-        public static Pattern operator ^(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Power, a, b.Head).Simplify(7));
+        public static Pattern operator -(Pattern a) => new Pattern(new UniaryOperatorNode(UniaryOperator.Negate, a.Head));
+        public static Pattern operator +(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Add, a.Head, b.Head));
+        public static Pattern operator +(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Add, a.Head, b));
+        public static Pattern operator +(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Add, a, b.Head));
+        public static Pattern operator -(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Subtract, a.Head, b.Head));
+        public static Pattern operator -(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Subtract, a.Head, b));
+        public static Pattern operator -(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Subtract, a, b.Head));
+        public static Pattern operator *(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Multiply, a.Head, b.Head));
+        public static Pattern operator *(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Multiply, a.Head, b));
+        public static Pattern operator *(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Multiply, a, b.Head));
+        public static Pattern operator /(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Divide, a.Head, b.Head));
+        public static Pattern operator /(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Divide, a.Head, b));
+        public static Pattern operator /(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Divide, a, b.Head));
+        public static Pattern operator ^(Pattern a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Power, a.Head, b.Head));
+        public static Pattern operator ^(Pattern a, Node b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Power, a.Head, b));
+        public static Pattern operator ^(Node a, Pattern b) => new Pattern(new BinaryOperatorNode(BinaryOperator.Power, a, b.Head));
 
         public static readonly Pattern Any1 = new Pattern(new PatternNode(01, PatternType.Any));
         public static readonly Pattern Any2 = new Pattern(new PatternNode(02, PatternType.Any));
@@ -182,6 +213,10 @@ namespace SymbolicMath.Simplify
         public static readonly Pattern Constant1 = new Pattern(new PatternNode(21, PatternType.Constant));
         public static readonly Pattern Constant2 = new Pattern(new PatternNode(22, PatternType.Constant));
         public static readonly Pattern Constant3 = new Pattern(new PatternNode(23, PatternType.Constant));
+        public static readonly Pattern Position1 = new Pattern(new PatternNode(31, PatternType.Position));
+        public static readonly Pattern Position2 = new Pattern(new PatternNode(32, PatternType.Position));
+        public static readonly Pattern Position3 = new Pattern(new PatternNode(33, PatternType.Position));
+        public static readonly Pattern Position4 = new Pattern(new PatternNode(34, PatternType.Position));
 
         public Node Head { get; private set; }
 
@@ -215,18 +250,24 @@ namespace SymbolicMath.Simplify
             return result;
         }
 
-        public static void Simplify(Rule[] Ruleset, ref Node node)
+        public static void Simplify(Rule[] Ruleset, ref Node node, bool brachesOnly = false)
         {
-            string hash;
-            HashSet<string> replaced = new HashSet<string>();
-            while (!replaced.Contains(hash = node.Hash(SortLevel.Low)))
+            if (node.Left != null)
             {
-                replaced.Add(hash);
+                if (!node.Left.IsLeaf) Simplify(Ruleset, ref node.Left);
+            }
+            if (node.Right != null)
+            {
+                if (!node.Right.IsLeaf) Simplify(Ruleset, ref node.Right);
+            }
+            if (!brachesOnly)
+            {
                 foreach (Rule rule in Ruleset)
                 {
                     Node newnode;
                     if ((newnode = rule.Apply(node, Ruleset)) != null)
                     {
+                        Simplify(Ruleset, ref newnode, true);
                         node = newnode;
                     }
                 }
@@ -238,7 +279,9 @@ namespace SymbolicMath.Simplify
             if(node is PatternNode)
             {
                 PatternNode patternNode = node as PatternNode;
-                return matchings[patternNode.Key];
+                Node toret = matchings[patternNode.Key];
+                Simplify(Ruleset, ref toret);
+                return toret;
             }
             else if(node is UniaryOperatorNode)
             {

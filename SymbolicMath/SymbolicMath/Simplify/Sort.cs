@@ -74,14 +74,14 @@ namespace SymbolicMath
                 return Clone() as Node;  
             }
             bool isSum = binOp.Operator == BinaryOperator.Add || binOp.Operator == BinaryOperator.Subtract;
-            List<Node> children = TreeAnalyzer.LinearChildren(this, isSum ? BinaryOperator.Add : BinaryOperator.Multiply, isSum ? BinaryOperator.Subtract : BinaryOperator.Divide);
-            List<List<Node>> groups = TreeAnalyzer.groupByHash(children, level);
-            List<Node> groupedChildren = new List<Node>();
-            foreach(List<Node> group in groups)
+            List<Tuple<Node, TreeAnalyzer.LinearChildTag>> children = TreeAnalyzer.LinearChildren(this, isSum ? BinaryOperator.Add : BinaryOperator.Multiply, isSum ? BinaryOperator.Subtract : BinaryOperator.Divide);
+            List<List<Tuple<Node, TreeAnalyzer.LinearChildTag>>> groups = TreeAnalyzer.groupByHash(children, level);
+            List<Tuple<Node, TreeAnalyzer.LinearChildTag>> groupedChildren = new List<Tuple<Node, TreeAnalyzer.LinearChildTag>>();
+            foreach(List<Tuple<Node, TreeAnalyzer.LinearChildTag>> group in groups)
             {
-                groupedChildren.Add(TreeAnalyzer.MultiHang(group, isSum ? BinaryOperator.Add : BinaryOperator.Multiply));
+                groupedChildren.Add(TreeAnalyzer.internalMultihang(group, isSum ? BinaryOperator.Add : BinaryOperator.Multiply, isSum ? BinaryOperator.Subtract : BinaryOperator.Divide));
             }
-            return TreeAnalyzer.MultiHang(groupedChildren, isSum ? BinaryOperator.Add : BinaryOperator.Multiply);
+            return TreeAnalyzer.MultiHang(groupedChildren, isSum ? BinaryOperator.Add : BinaryOperator.Multiply, isSum ? BinaryOperator.Subtract : BinaryOperator.Divide);
         }
     }
 }
@@ -97,22 +97,21 @@ namespace SymbolicMath.Simplify
 
     static partial class TreeAnalyzer
     {
-        public static List<List<Node>> groupByHash(List<Node> nodes, SortLevel level)
+        public static List<List<Tuple<Node, TreeAnalyzer.LinearChildTag>>> groupByHash(List<Tuple<Node, TreeAnalyzer.LinearChildTag>> nodes, SortLevel level)
         {
-            Dictionary<string, List<Node>> dict = new Dictionary<string, List<Node>>();
-            foreach(Node node in nodes)
+            Dictionary<string, List<Tuple<Node, TreeAnalyzer.LinearChildTag>>> dict = new Dictionary<string, List<Tuple<Node, TreeAnalyzer.LinearChildTag>>>();
+            foreach(Tuple<Node, TreeAnalyzer.LinearChildTag> node in nodes)
             {
-                string hash = node.Hash(level);
+                string hash = node.Item1.Hash(level);
                 if(!dict.ContainsKey(hash))
                 {
-                    dict.Add(hash, new List<Node>());
+                    dict.Add(hash, new List<Tuple<Node, TreeAnalyzer.LinearChildTag>>());
                 }
                 dict[hash].Add(node);
             }
-            List<List<Node>> toreturn = new List<List<Node>>();
+            List<List<Tuple<Node, TreeAnalyzer.LinearChildTag>>> toreturn = new List<List<Tuple<Node, TreeAnalyzer.LinearChildTag>>>();
             List<string> keys = dict.Keys.ToList();
             keys.Sort();
-            keys.Reverse();
             foreach (string key in keys)
             {
                 toreturn.Add(dict[key]);
@@ -120,13 +119,48 @@ namespace SymbolicMath.Simplify
             return toreturn;
         }
 
-        public static Node MultiHang(List<Node> nodes, BinaryOperator @operator)
+        public static Node MultiHang(List<Tuple<Node, LinearChildTag>> nodes, BinaryOperator @operator, BinaryOperator inverse)
+        {
+            Tuple<Node, LinearChildTag> result = internalMultihang(nodes, @operator, inverse);
+            if(result.Item2 == LinearChildTag.Keep)
+            {
+                return result.Item1;
+            }
+            switch (inverse)
+            {
+                case BinaryOperator.Subtract: return new UniaryOperatorNode(UniaryOperator.Negate, result.Item1);
+                case BinaryOperator.Divide: return new BinaryOperatorNode(BinaryOperator.Divide, result.Item1, -1);
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public static Tuple<Node, LinearChildTag> internalMultihang(List<Tuple<Node,LinearChildTag>> nodes, BinaryOperator @operator, BinaryOperator inverse)
         {
             if(nodes.Count == 1)
             {
                 return nodes[0];
             }
-            return new BinaryOperatorNode(@operator, nodes[0], MultiHang(nodes.GetRange(1, nodes.Count - 1), @operator));
+            Tuple<Node, LinearChildTag> left = nodes[0];
+            nodes.RemoveAt(0);
+            Tuple<Node, LinearChildTag> right = internalMultihang(nodes, @operator, inverse);
+            if(left.Item2 == LinearChildTag.Keep && right.Item2 == LinearChildTag.Keep)
+            {
+                return new Tuple<Node, LinearChildTag>(new BinaryOperatorNode(@operator, left.Item1, right.Item1), LinearChildTag.Keep);
+            }
+            else if(left.Item2 == LinearChildTag.Keep && right.Item2 == LinearChildTag.Inverted)
+            {
+                return new Tuple<Node, LinearChildTag>(new BinaryOperatorNode(inverse, left.Item1, right.Item1), LinearChildTag.Keep);
+            }
+            else if(left.Item2 == LinearChildTag.Inverted && right.Item2 == LinearChildTag.Keep)
+            {
+                return new Tuple<Node, LinearChildTag>(new BinaryOperatorNode(inverse, right.Item1, left.Item1), LinearChildTag.Keep);
+            }
+            else if(left.Item2 == LinearChildTag.Inverted && right.Item2 == LinearChildTag.Inverted)
+            {
+                return new Tuple<Node, LinearChildTag>(new BinaryOperatorNode(inverse, left.Item1, right.Item1), LinearChildTag.Inverted);
+            }
+            throw new NotImplementedException();
         }
     }
 }

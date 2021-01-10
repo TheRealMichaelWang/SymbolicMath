@@ -60,6 +60,8 @@ namespace SymbolicMath
             return Head.Substitute(susbstituteValues);
         }
 
+        public Expression Derive() => Derive("x");
+
         public Expression Derive(string variableIdentifier)
         {
             return new Expression(Head.Derive(variableIdentifier).Simplify());

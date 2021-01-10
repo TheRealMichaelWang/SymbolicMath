@@ -24,8 +24,9 @@ namespace SymbolicMath
             //Expression denominator = 3 * (x^2);
             //Expression quotient = (numerator / denominator);
             //numerator.Head.Simplify(2);
-            ;
-            Expression num = 4 ^ MathLib.Log(x, 2);
+
+            Expression expression = MathLib.Log(x ^ -1, y);
+            Console.Write(expression.Derive());
             ;
         }
     }

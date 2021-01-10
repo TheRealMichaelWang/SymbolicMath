@@ -91,11 +91,11 @@ namespace SymbolicMath.OperatorExtensions
             }
             else if (r1.Equals(0))
             {
-                return new UniaryOperatorNode(UniaryOperator.Negate, r2);
+                return -r2;
             }
             else
             {
-                return new BinaryOperatorNode(BinaryOperator.Subtract, r1, r2);
+                return r1 - r2;
             }
         }
     }
@@ -114,13 +114,17 @@ namespace SymbolicMath.OperatorExtensions
             {
                 return Functions.GetAnotherNode(r1, r2, 1);
             }
+            else if (Functions.IsOneNumber(r1, r2, -1))
+            {
+                return -Functions.GetAnotherNode(r1, r2, -1);
+            }
             else if (Functions.IsOneNumber(r1, r2, 0))
             {
                 return 0;
             }
             else
             {
-                return new BinaryOperatorNode(BinaryOperator.Multiply, r1, r2);
+                return r1 * r2;
             }
         }
     }
@@ -143,9 +147,13 @@ namespace SymbolicMath.OperatorExtensions
             {
                 return r1;
             }
+            else if(r1.Equals(r2))
+            {
+                return 1;
+            }
             else
             {
-                return new BinaryOperatorNode(BinaryOperator.Divide, left, right);
+                return r1 / r2;
             }
         }
     }
@@ -174,7 +182,7 @@ namespace SymbolicMath.OperatorExtensions
             }
             else
             {
-                return new BinaryOperatorNode(BinaryOperator.Power, r1, r2);
+                return r1 ^ r2;
             }
         }
     }
@@ -262,7 +270,7 @@ namespace SymbolicMath.OperatorExtensions
             {
                 return new NumberNode(-(r as NumberNode).Value);
             }
-            return new UniaryOperatorNode(UniaryOperator.Negate, r);
+            return -r;
         }
     }
 }

@@ -26,6 +26,13 @@ namespace SymbolicMath
 
     public abstract partial class Node : ICloneable
     {
+        public static Node operator +(Node a, Node b) => new BinaryOperatorNode(BinaryOperator.Add, a, b);
+        public static Node operator -(Node a, Node b) => new BinaryOperatorNode(BinaryOperator.Subtract, a, b);
+        public static Node operator *(Node a, Node b) => new BinaryOperatorNode(BinaryOperator.Multiply, a, b);
+        public static Node operator /(Node a, Node b) => new BinaryOperatorNode(BinaryOperator.Divide, a, b);
+        public static Node operator ^(Node a, Node b) => new BinaryOperatorNode(BinaryOperator.Power, a, b);
+        public static Node operator -(Node a) => new UniaryOperatorNode(UniaryOperator.Negate, a);
+
         public static implicit operator Node(double value) => new NumberNode(value);
         public static implicit operator Node(int value) => new NumberNode(Convert.ToDouble(value));
 
@@ -61,7 +68,7 @@ namespace SymbolicMath
         public abstract override string ToString();
 
         public Node Derive(VariableNode variableNode) => Derive(variableNode.Identifier);
-        public Node Simplify() => Simplify(2);
+        public Node Simplify() => Simplify(1);
     }
 
     public partial class NumberNode : Node
@@ -180,42 +187,6 @@ namespace SymbolicMath
 
         public BinaryOperatorNode(BinaryOperator @operator, Node left, Node right):base(left,right)
         {
-            bool rightNegated = false;
-            if(right is UniaryOperatorNode)
-            {
-                UniaryOperatorNode uniOp = right as UniaryOperatorNode;
-                if(uniOp.Operator == UniaryOperator.Negate)
-                {
-                    if (@operator == BinaryOperator.Add)
-                    {
-                        this.Operator = BinaryOperator.Subtract;
-                        Right = uniOp.Left;
-                        rightNegated = true;
-                        return;
-                    }
-                    else if(@operator == BinaryOperator.Subtract)
-                    {
-                        this.Operator = BinaryOperator.Add;
-                        Right = uniOp.Left;
-                        rightNegated = true;
-                        return;
-                    }
-                }
-            }
-            if(left is UniaryOperatorNode && !rightNegated)
-            {
-                UniaryOperatorNode uniOp = left as UniaryOperatorNode;
-                if(uniOp.Operator == UniaryOperator.Negate && !rightNegated)
-                {
-                    if(@operator == BinaryOperator.Add)
-                    {
-                        this.Operator = BinaryOperator.Subtract;
-                        Right = uniOp.Left;
-                        Left = right;
-                        return;
-                    }
-                }
-            }
             this.Operator = @operator;
         }
 
@@ -248,11 +219,6 @@ namespace SymbolicMath
         public override Node Simplify(int level)
         {
             Node res = this.Eval();
-            bool no_simp = false;
-            if(level == 6 || level == 7)
-            {
-                no_simp = true;
-            }
             for (int i = 0; i < level; i++)
             {
                 switch (i)
@@ -267,13 +233,10 @@ namespace SymbolicMath
                         res = res.Sort(SymbolicMath.Simplify.SortLevel.Low);
                         break;
                 }
-                if (!no_simp)
-                {
-                    TreeAnalyzer.Simplify(Rules.CommonRules, ref res);
-                }
                 res = res.Eval();
+                TreeAnalyzer.Simplify(Rules.CommonRules, ref res);
             }
-            return res;
+            return res.Eval();
         }
 
         public override Node Derive(string variableIdentifier)

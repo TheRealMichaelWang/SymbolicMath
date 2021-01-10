@@ -32,71 +32,102 @@ namespace SymbolicMath.Simplify
     {
         public static Rule[] CommonRules = new Rule[]
         {
-            new Rule(Pattern.Any1 / (Pattern.Any2 / Pattern.Any3),Pattern.Any1 * Pattern.Any2 / Pattern.Any3),
-            new Rule(Pattern.Any1 * (Pattern.Any2 / Pattern.Any3), (Pattern.Any1 * Pattern.Any2) / Pattern.Any3),
-            new Rule(Pattern.Var1 * Pattern.Constant1, Pattern.Constant1 * Pattern.Var1),
-            new Rule(Pattern.Constant1 + Pattern.Var1, Pattern.Var1 + Pattern.Constant1),
 
-            new Rule((Pattern.Constant1 * Pattern.Var1) + (Pattern.Constant2 * Pattern.Var1),(Pattern.Constant1 + Pattern.Constant2) * Pattern.Var1),
+            /*
+             * Trigonometric Behavior Rules
+             */
 
-            new Rule((Pattern.Constant1 * Pattern.Var1) - (Pattern.Constant2 * Pattern.Var1),(Pattern.Constant1 - Pattern.Constant2) * Pattern.Var1),
+            //sin(x) * cos(x) = x
+            new Rule(new Pattern(new UniaryOperatorNode(UniaryOperator.Sin, Pattern.Any1.Head) * new UniaryOperatorNode(UniaryOperator.Cos, Pattern.Any1.Head)), new Pattern(0.5 * new UniaryOperatorNode(UniaryOperator.Sin, 2 * Pattern.Any1.Head))),
+            new Rule(new Pattern(new UniaryOperatorNode(UniaryOperator.Cos, Pattern.Any1.Head) * new UniaryOperatorNode(UniaryOperator.Sin, Pattern.Any1.Head)), new Pattern(0.5 * new UniaryOperatorNode(UniaryOperator.Sin, 2 * Pattern.Any1.Head))),
 
-            new Rule((Pattern.Any1 * Pattern.Any2) + (Pattern.Any1 * Pattern.Any3), Pattern.Any1 * (Pattern.Any2 + Pattern.Any3)),
-            new Rule((Pattern.Any1 * Pattern.Any2) + (Pattern.Any3 * Pattern.Any1), Pattern.Any1 * (Pattern.Any2 + Pattern.Any3)),
-            new Rule((Pattern.Any2 * Pattern.Any2) + (Pattern.Any1 * Pattern.Any3), Pattern.Any1 * (Pattern.Any2 + Pattern.Any3)),
-            new Rule((Pattern.Any2 * Pattern.Any2) + (Pattern.Any3 * Pattern.Any1), Pattern.Any1 * (Pattern.Any2 + Pattern.Any3)),
-            new Rule(Pattern.Any1 + (Pattern.Any1 * Pattern.Any2), Pattern.Any1 * (Pattern.Any2 + 1)),
-            new Rule(Pattern.Any1 + (Pattern.Any2 * Pattern.Any1), Pattern.Any1 * (Pattern.Any2 + 1)),
-            new Rule((Pattern.Any1 * Pattern.Any2) + Pattern.Any1, Pattern.Any1 * (Pattern.Any2 + 1)),
-            new Rule((Pattern.Any2 * Pattern.Any1) + Pattern.Any1, Pattern.Any1 * (Pattern.Any2 + 1)),
+            /*
+             * Exponential Rules (logarithmic)
+             */
+
+            // log(1 / a, b) = -log(a, b)
+            new Rule(new Pattern(new BinaryOperatorNode(BinaryOperator.Log, Pattern.Any1.Head^-1, Pattern.Any2.Head)), new Pattern(-new BinaryOperatorNode(BinaryOperator.Log, Pattern.Any1.Head, Pattern.Any2.Head))),
+
+            /*
+             * Exponential Behavior Rules (non-logarithmic)
+             */
+
+            //a * a = a^2
+            new Rule(Pattern.Any1 * Pattern.Any1, Pattern.Any1^2),
+
+            //a ^ (b ^ c) = a ^ (b + c)
+            new Rule(Pattern.Position1 ^ (Pattern.Position2 ^ Pattern.Position3), Pattern.Position1 ^ (Pattern.Position2 + Pattern.Position3)),
+            new Rule((Pattern.Position1 ^ Pattern.Position2) ^ Pattern.Position3, Pattern.Position1 ^ (Pattern.Position2 + Pattern.Position3)),
+
+            //a / (a ^ b) = a ^ (1 - b)
+            new Rule(Pattern.Any1 / (Pattern.Any1 ^ Pattern.Position1), Pattern.Any1 ^ (1 - Pattern.Position1)),
+
+            //(a ^ b) / a = a ^ (b - 1)
+            new Rule((Pattern.Any1 ^ Pattern.Position1) / Pattern.Any1, Pattern.Any1 ^ (Pattern.Position1 - 1)),
+
+            //(a ^ b) / (a ^ c) = a ^ (b - c)
+            new Rule((Pattern.Any1 ^ Pattern.Position1) / (Pattern.Any1 ^ Pattern.Position2), Pattern.Any1 ^ (Pattern.Position1 - Pattern.Position2)),
+
+            //a * (a ^ b) = (a ^ b + 1), (a ^ b) * a = a ^ (b + 1)
+            new Rule(Pattern.Any1 * (Pattern.Any1 ^ Pattern.Position1), Pattern.Any1 ^ (Pattern.Position1 + 1)),
+            new Rule((Pattern.Any1 ^ Pattern.Position1) * Pattern.Any1, Pattern.Any1 ^ (Pattern.Position1 + 1)),
+
+            //(a ^ b) * (a ^ c) = a ^ (b + c)
+            new Rule((Pattern.Any1 ^ Pattern.Position1) * (Pattern.Any1 ^ Pattern.Position2), Pattern.Any1 ^ (Pattern.Position1 + Pattern.Position2)),
+
+            //1 / (a ^ b) = a ^ (-b)
+            new Rule(1 / (Pattern.Position1 ^ Pattern.Position2), Pattern.Position1 ^ (-Pattern.Position2)),
+            
+            //1 / a = a^-1
+            new Rule(1 / Pattern.Position1, Pattern.Position1^-1),
+
+            //(a ^ -b) / c = c / (a ^ b)
+            new Rule((Pattern.Position1 ^ -Pattern.Position2) / Pattern.Position3, Pattern.Position3 / (Pattern.Position1 ^ Pattern.Position2)),
+
+            /*
+             * Basic Addition and Subtraction Behavior Rules
+             */
+
+            //a + a = 2 * a
             new Rule(Pattern.Any1 + Pattern.Any1, 2 * Pattern.Any1),
 
-            new Rule((Pattern.Any1 * Pattern.Any2) - (Pattern.Any1 * Pattern.Any3), Pattern.Any1 * (Pattern.Any2 - Pattern.Any3)),
-            new Rule((Pattern.Any1 * Pattern.Any2) - (Pattern.Any3 * Pattern.Any1), Pattern.Any1 * (Pattern.Any2 - Pattern.Any3)),
-            new Rule((Pattern.Any2 * Pattern.Any2) - (Pattern.Any1 * Pattern.Any3), Pattern.Any1 * (Pattern.Any2 - Pattern.Any3)),
-            new Rule((Pattern.Any2 * Pattern.Any2) - (Pattern.Any3 * Pattern.Any1), Pattern.Any1 * (Pattern.Any2 - Pattern.Any3)),
-            new Rule(Pattern.Any1 - (Pattern.Any1 * Pattern.Any2), Pattern.Any1 * (1 - Pattern.Any2)),
-            new Rule(Pattern.Any1 - (Pattern.Any2 * Pattern.Any1), Pattern.Any1 * (1 - Pattern.Any2)),
-            new Rule((Pattern.Any1 * Pattern.Any2) - Pattern.Any1, Pattern.Any1 * (Pattern.Any2 - 1)),
-            new Rule((Pattern.Any2 * Pattern.Any1) - Pattern.Any1, Pattern.Any1 * (Pattern.Any2 - 1)),
-
-            new Rule((Pattern.Any1 / Pattern.Any2) + (Pattern.Any1 * Pattern.Any3),Pattern.Any1 * (1 / (Pattern.Any2 + Pattern.Any3))),
-            new Rule((Pattern.Any1 / Pattern.Any2) + (Pattern.Any3 * Pattern.Any1),Pattern.Any1 * (1 / (Pattern.Any2 + Pattern.Any3))),
-            new Rule((Pattern.Any1 * Pattern.Any2) + (Pattern.Any1 / Pattern.Any3),Pattern.Any1 * (Pattern.Any2 / (1 + Pattern.Any3))),
-            new Rule((Pattern.Any2 * Pattern.Any1) + (Pattern.Any1 / Pattern.Any3),Pattern.Any1 * (Pattern.Any2 / (1 + Pattern.Any3))),
-            new Rule(Pattern.Any1 + (Pattern.Any1 / Pattern.Any2),Pattern.Any1 * (1 + (1 / Pattern.Any2))),
-            new Rule((Pattern.Any1 / Pattern.Any2) + Pattern.Any1,Pattern.Any1 * (1 + (1 / Pattern.Any2))),
+            //a + (b * a) = (b + 1) * a
+            new Rule(Pattern.Any1 + (Pattern.Position1 * Pattern.Any1), (Pattern.Position1 + 1) * Pattern.Any1),
+            new Rule(Pattern.Any1 + (Pattern.Any1 * Pattern.Position1), (Pattern.Position1 + 1) * Pattern.Any1),
+            new Rule((Pattern.Position1 * Pattern.Any1) + Pattern.Any1, (Pattern.Position1 + 1) * Pattern.Any1),
+            new Rule((Pattern.Any1 * Pattern.Position1) + Pattern.Any1, (Pattern.Position1 + 1) * Pattern.Any1),
             
-            new Rule(Pattern.Var1 * Pattern.Var1, Pattern.Var1^2),
+            //a - (b * a) = (1 - b) * a, (b * a) - a = (b - 1) * a
+            new Rule(Pattern.Any1 - (Pattern.Position1 * Pattern.Any1), (1 - Pattern.Position1) * Pattern.Any1),
+            new Rule(Pattern.Any1 - (Pattern.Any1 * Pattern.Position1), (1 - Pattern.Position1) * Pattern.Any1),
+            new Rule((Pattern.Position1 * Pattern.Any1) - Pattern.Any1, (Pattern.Position1 - 1) * Pattern.Any1),
+            new Rule((Pattern.Any1 * Pattern.Position1) - Pattern.Any1, (Pattern.Position1 - 1) * Pattern.Any1),
 
-            new Rule(Pattern.Var1 * (Pattern.Any1^Pattern.Any2),(Pattern.Any1^Pattern.Any2) * Pattern.Var1),
-
-            new Rule((Pattern.Any1^Pattern.Any2) * Pattern.Any1, Pattern.Any1^(Pattern.Any2 + 1)),
-            new Rule(Pattern.Any1 * (Pattern.Any1^Pattern.Any2), Pattern.Any1^(Pattern.Any2 + 1)),
-
-            new Rule((Pattern.Any1^Pattern.Any1)^Pattern.Any3, Pattern.Any1^(Pattern.Any1 + Pattern.Any2)),
-
-            new Rule((Pattern.Any1^Pattern.Any2) * (Pattern.Any1^Pattern.Any3),Pattern.Any1^(Pattern.Any2 + Pattern.Any3)),
-
-            new Rule((Pattern.Any1^Pattern.Any2) / (Pattern.Any1^Pattern.Any3),Pattern.Any1^(Pattern.Any2 - Pattern.Any3)),
-
-            new Rule(Pattern.Any1 / (Pattern.Any1 ^ Pattern.Any2), Pattern.Any1 ^ (1 - Pattern.Any2)),
-            new Rule((Pattern.Any1 ^ Pattern.Any2) / Pattern.Any1, Pattern.Any1 ^ (Pattern.Any2 - 1)),
-
-            new Rule(Pattern.Constant1 ^ new BinaryOperatorNode(BinaryOperator.Log,Pattern.Any1.Head,Pattern.Constant1.Head), Pattern.Any1),
-
-            new Rule((Pattern.Constant1 * Pattern.Var1) * Pattern.Constant2, (Pattern.Constant1 * Pattern.Constant2) * Pattern.Var1),
-            new Rule(Pattern.Constant2 * (Pattern.Constant1 * Pattern.Var1), (Pattern.Constant1 * Pattern.Constant2) * Pattern.Var1),
-
-            new Rule((Pattern.Var1 + Pattern.Constant1) + Pattern.Constant2, Pattern.Var1 + (Pattern.Constant1 + Pattern.Constant2)),
-            new Rule(Pattern.Constant2 +(Pattern.Var1 + Pattern.Constant1), Pattern.Var1 + (Pattern.Constant1 + Pattern.Constant2)),
+            //(b * a) + (c * a)
+            new Rule((Pattern.Position1 * Pattern.Any1) + (Pattern.Position2 * Pattern.Any1), (Pattern.Position1 + Pattern.Position2) * Pattern.Any1),
+            new Rule((Pattern.Position1 * Pattern.Any1) + (Pattern.Any1 * Pattern.Position2), (Pattern.Position1 + Pattern.Position2) * Pattern.Any1),
+            new Rule((Pattern.Any1 * Pattern.Position1) + (Pattern.Position2 * Pattern.Any1), (Pattern.Position1 + Pattern.Position2) * Pattern.Any1),
+            new Rule((Pattern.Any1 * Pattern.Position1) + (Pattern.Any1 * Pattern.Position2), (Pattern.Position1 + Pattern.Position2) * Pattern.Any1),
             
-            new Rule(Pattern.Any1 * (Pattern.Any1 * Pattern.Any2), (Pattern.Any1 * Pattern.Any1) * Pattern.Any2),
-            new Rule(Pattern.Any1 * (Pattern.Any2 * Pattern.Any1), (Pattern.Any1 * Pattern.Any1) * Pattern.Any2),
-            new Rule((Pattern.Any1 * Pattern.Any2) * Pattern.Any1, (Pattern.Any1 * Pattern.Any1) * Pattern.Any2),
-            new Rule((Pattern.Any2 * Pattern.Any1) * Pattern.Any1, (Pattern.Any1 * Pattern.Any1) * Pattern.Any2),
+            //(b * a) - (c * a)
+            new Rule((Pattern.Position1 * Pattern.Any1) - (Pattern.Position2 * Pattern.Any1), (Pattern.Position1 - Pattern.Position2) * Pattern.Any1),
+            new Rule((Pattern.Position1 * Pattern.Any1) - (Pattern.Any1 * Pattern.Position2), (Pattern.Position1 - Pattern.Position2) * Pattern.Any1),
+            new Rule((Pattern.Any1 * Pattern.Position1) - (Pattern.Position2 * Pattern.Any1), (Pattern.Position1 - Pattern.Position2) * Pattern.Any1),
+            new Rule((Pattern.Any1 * Pattern.Position1) - (Pattern.Any1 * Pattern.Position2), (Pattern.Position1 - Pattern.Position2) * Pattern.Any1),
 
-            new Rule((Pattern.Any1 ^ Pattern.Any3) * (Pattern.Any1 * Pattern.Any2), (Pattern.Any1^(Pattern.Any3+1)) * Pattern.Any2)
+            /*
+             * Basic Multiplication and Division Behavior Rules
+             */
+            
+            // a / (b / c) = (a * c) / b, (a / b) / c = a / (b * c)
+            new Rule(Pattern.Position1 / (Pattern.Position2 / Pattern.Position3), (Pattern.Position1 * Pattern.Position3) / Pattern.Position2),
+            new Rule((Pattern.Position1 / Pattern.Position2) / Pattern.Position3, Pattern.Position1 / (Pattern.Position2 * Pattern.Position3)),
+
+            // (a / b) + (a * c) = a * (b^-1 * c)
+            new Rule((Pattern.Any1 / Pattern.Position1) + (Pattern.Any1 * Pattern.Position2), Pattern.Any1 * ((Pattern.Position1 ^ -1) * Pattern.Position2)),
+            new Rule((Pattern.Any1 / Pattern.Position1) + (Pattern.Position2 * Pattern.Any1), Pattern.Any1 * ((Pattern.Position1 ^ -1) * Pattern.Position2)),
+            new Rule((Pattern.Any1 * Pattern.Position2) + (Pattern.Any1 / Pattern.Position1), Pattern.Any1 * ((Pattern.Position1 ^ -1) * Pattern.Position2)),
+            new Rule((Pattern.Position2 * Pattern.Any1) + (Pattern.Any1 / Pattern.Position1), Pattern.Any1 * ((Pattern.Position1 ^ -1) * Pattern.Position2))
         };
     }
 }

@@ -17,12 +17,16 @@ namespace SymbolicMath.OperatorExtensions
             {BinaryOperator.Subtract, subtractf.Derive },
             {BinaryOperator.Multiply, multiplyf.Derive },
             {BinaryOperator.Divide, dividef.Derive },
-            {BinaryOperator.Power, powerf.Derive }
+            {BinaryOperator.Power, powerf.Derive },
+            {BinaryOperator.Log, logf.Derive }
         };
 
         public static readonly Dictionary<UniaryOperator, UniaryDerivationFunction> uniaryDeriveTable = new Dictionary<UniaryOperator, UniaryDerivationFunction>()
         {
-
+            {UniaryOperator.Sin, sinf.Derive },
+            {UniaryOperator.Cos, cosf.Derive },
+            {UniaryOperator.Tan, tanf.Derive },
+            {UniaryOperator.Negate, negatef.Derive }
         };
     }
 
@@ -31,7 +35,7 @@ namespace SymbolicMath.OperatorExtensions
         //(a + b)' = a' + b'
         public static Node Derive(Node left, Node right, string variabelIdentifier)
         {
-            return new BinaryOperatorNode(BinaryOperator.Add, left.Derive(variabelIdentifier), right.Derive(variabelIdentifier));
+            return left.Derive(variabelIdentifier) + right.Derive(variabelIdentifier);
         }
     }
 
@@ -40,7 +44,7 @@ namespace SymbolicMath.OperatorExtensions
         //(a + b)' = a' - b'
         public static Node Derive(Node left, Node right, string variabelIdentifier)
         {
-            return new BinaryOperatorNode(BinaryOperator.Subtract, left.Derive(variabelIdentifier), right.Derive(variabelIdentifier));
+            return left.Derive(variabelIdentifier) - right.Derive(variabelIdentifier);
         }
     }
 
@@ -49,7 +53,7 @@ namespace SymbolicMath.OperatorExtensions
         //(a * b)' = (a' * b + b' * a)
         public static Node Derive(Node left, Node right, string variableIdentifier)
         {
-            return new BinaryOperatorNode(BinaryOperator.Add, new BinaryOperatorNode(BinaryOperator.Multiply, left.Derive(variableIdentifier), right), new BinaryOperatorNode(BinaryOperator.Multiply, right.Derive(variableIdentifier), left));
+            return (left.Derive(variableIdentifier) * right) + (right.Derive(variableIdentifier) * left);
         }
     }
 
@@ -58,8 +62,7 @@ namespace SymbolicMath.OperatorExtensions
         // (a / b)' = (a' * b - b' * a) / b^2
         public static Node Derive(Node left, Node right, string variableIdentifier)
         {
-            return new BinaryOperatorNode(BinaryOperator.Divide,
-            new BinaryOperatorNode(BinaryOperator.Subtract, new BinaryOperatorNode(BinaryOperator.Multiply, left.Derive(variableIdentifier), right), new BinaryOperatorNode(BinaryOperator.Multiply, right.Derive(variableIdentifier), left)), new BinaryOperatorNode(BinaryOperator.Power, right, 2));
+            return ((left.Derive(variableIdentifier) * right) - (right.Derive(variableIdentifier) * left)) / (right ^ 2);
         }
     }
     
@@ -73,13 +76,13 @@ namespace SymbolicMath.OperatorExtensions
             if(right is NumberNode)
             {
                 var cons = (right as NumberNode).Value - 1;
-                return new BinaryOperatorNode(BinaryOperator.Multiply, right, new BinaryOperatorNode(BinaryOperator.Multiply, new BinaryOperatorNode(BinaryOperator.Power, left, cons), left.Derive(variableIdentifier)));
+                return (right * (left ^ cons)) * left.Derive(variableIdentifier);
             }
             else if(left is NumberNode)
             {
-                new BinaryOperatorNode(BinaryOperator.Multiply, new BinaryOperatorNode(BinaryOperator.Log, left, Math.E), new BinaryOperatorNode(BinaryOperator.Multiply, new BinaryOperatorNode(BinaryOperator.Power, left, right), right.Derive(variableIdentifier)));
+                return (left ^ right) * new BinaryOperatorNode(BinaryOperator.Log, left, Math.E) * right.Derive(variableIdentifier);
             }
-            return new BinaryOperatorNode(BinaryOperator.Multiply, new BinaryOperatorNode(BinaryOperator.Power, left, right), new BinaryOperatorNode(BinaryOperator.Multiply, new BinaryOperatorNode(BinaryOperator.Divide, right, new BinaryOperatorNode(BinaryOperator.Add, left, new BinaryOperatorNode(BinaryOperator.Log, left, Math.E))), new BinaryOperatorNode(BinaryOperator.Multiply, left.Derive(variableIdentifier), right.Derive(variableIdentifier))));
+            return (left ^ right) * (left.Derive(variableIdentifier) * right / left + (new BinaryOperatorNode(BinaryOperator.Log, left, Math.E) * right.Derive(variableIdentifier)));
         }
     }
 
@@ -88,7 +91,42 @@ namespace SymbolicMath.OperatorExtensions
         // log(a, b) = (ln(a) / ln(b))' = (ln(a)' * ln(b) - ln(a) * ln(b)') / ln(b)^2 = (a' / a * ln(b) - ln(a) * b' / b) / ln(b)^2
         public static Node Derive(Node left, Node right, string variableIdentifier)
         {
-            return new BinaryOperatorNode(BinaryOperator.Divide, new BinaryOperatorNode(BinaryOperator.Subtract, new BinaryOperatorNode(BinaryOperator.Divide, left.Derive(variableIdentifier), new BinaryOperatorNode(BinaryOperator.Multiply, left, new BinaryOperatorNode(BinaryOperator.Log, right, Math.E))), new BinaryOperatorNode(BinaryOperator.Multiply, new BinaryOperatorNode(BinaryOperator.Log, left, Math.E), new BinaryOperatorNode(BinaryOperator.Divide, right.Derive(variableIdentifier), right))), new BinaryOperatorNode(BinaryOperator.Power, new BinaryOperatorNode(BinaryOperator.Log, right, Math.E), 2));
+            return ((left.Derive(variableIdentifier) / left * new BinaryOperatorNode(BinaryOperator.Log, right, Math.E)) - (right.Derive(variableIdentifier) / right * new BinaryOperatorNode(BinaryOperator.Log, left, Math.E))) / (new BinaryOperatorNode(BinaryOperator.Log, right, Math.E) ^ 2);
+        }
+    }
+
+    static partial class sinf
+    { 
+        //sin(a)' = cos(a) * a'
+        public static Node Derive(Node node, string variableIdentifier)
+        {
+            return new UniaryOperatorNode(UniaryOperator.Cos, node) * node.Derive(variableIdentifier);
+        }
+    }
+
+    static partial class cosf
+    {
+        //sin(a)' = -sin(a) * a'
+        public static Node Derive(Node node, string variableIdentifer)
+        {
+            return (-new UniaryOperatorNode(UniaryOperator.Sin, node)) * node.Derive(variableIdentifer);
+        }
+    }
+
+    static partial class tanf
+    {
+        //tan(a) = cos(a)^-2 * a'
+        public static Node Derive(Node node, string variableIdentifier)
+        {
+            return (new UniaryOperatorNode(UniaryOperator.Cos, node) ^ 2) * node.Derive(variableIdentifier);
+        }
+    }
+
+    static partial class negatef
+    {
+        public static Node Derive(Node node, string variableIdentifier)
+        {
+            return multiplyf.Derive(-1, node, variableIdentifier);
         }
     }
 }
